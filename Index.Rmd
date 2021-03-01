@@ -1,0 +1,378 @@
+---
+title: "Using Fixed and Mixed Effects Linear Regression and Model Selection on Vegetation Richness of Montana Grassland"
+author: | 
+  | Yirao Zhang
+  | University of British Columbia
+date: "01/03/2021"
+output: html_document
+---
+## Introduction
+
+Biodiversity, which is measured as an attribute by two components: richness and evenness, is vital to maintaining the functioning of ecosystems. Richness, by definition, is expressed as the number of species. In plant communities, it is measured because high richness is related to healthy ecosystem: increased stability, productivity and resistance to disturbances^[1]^. Monitoring the species richness, dominance and composition is of critical importance to determine how plant community is affected by environmental factors. Global climate changes significantly affect precipitation and temperature^[2]^. As a consequence, increased temperature and precipitation fluctuations will result in composition and richness changes. In general, species richness tend to increase with temperature increasing. Richness will increase to a maximum until water deficits where it will begin to depress^[3]^. Increased precipitation also benefits species richness by improving soil nutrient availability and increasing metabolism^[4]^.Human activities such as mowing, grazing and fertilization will cause land degradation and soil erosion, and consequently degraded the vegetation cover^[5]^. 
+In this study, we analyzed two monitored temperate grassland communities in the northern Rocky Mountains of Montana, USA, within Yellowstone National Park and the National Bison Range. Vegetation richness is estimated as the number of species encountered across all transects. Yellowstone National Park(YNP)is located at Montana's southern border, which is mountainous and highly touristic. The northern boundary area is dominated by native grass and shrub communities. The National Bison Range(NBR) is located in Montana's western boundary. Both are dominated by native bunchgrasses, including Pseudoroegneria spicata (Pursh) A. Love, Festuca idahoensis Elmer, and F.altaica Trin, and both of YNP and NBR have experienced climate change, grazing, and non-native species invasion. The grasslands are unique because they exist in cool, semi-arid northern landscapes that have not been highly affected by human activities, and have been resampled in the past 50 years. In 1957, YNP personnel constructed various five-acre exclosures in the northern winter range that eliminated hunting of large animals. Several transects were set up inside each exclosure. Outside the exclosures, a few transects were built and open to big-game hunting. NBR also established a experiment to investigate the effects of managed grazing. The transects were in areas where bisons are restricted to the refuge. Vegetation hits include either overstory or understory in the canopy. Substrate were recorded as bare ground, rock, pavement, litter or moss/lichen^[6]^. 
+Our questions include the following: (i)Does the vegetation richness of the grassland community change over time and transects? (ii)The correlation between the environmental factors: baresoil, rock, litter, fall precipitation, maximum spring temperature. (iii)The linear regression model of relationship between predictor vegetation richness and explanatory variables. We will conduct a series of statistical analysis to answer these questions. First, we will perform a two-way ANOVA to explore the time and transect effects on vegetation richness. Second, we will calculate the correlation between the variables to detect the issue of collinearity. Multiple linear regression is then applied. We will fit the model with fixed effects and mixed effects. Two approaches: Likelihood-ratio test and AIC will be implemented to select model and parameters. Model averaging will be carried on plausible models. Finally, the selected model will be validated and compared with the mean to see the importance of the model.
+
+## Method
+
+### Data collection and variables
+
+The transects were numerically oded with number 1-12, and have been sampled using exactly the same methods. Along each transect line, vegetation or substrate encountered at 0.33m mark was recorded. Vegetation hits include either overstory or understory in the canopy. Substrate were recorded as bare ground, rock, and litter^[7]^.
+The climate of both YNR and NBR is semi-arid. The specific temperature and precipitation values were collected from the nearest monitoring site using a SOGS(surface obserbation gridding system) with adjustment according to the transect's elevation, slope, aspect and location on the landscape. The climate variables include mean maximum temperature for Spring(SprTmax), and total precipitation for Fall(FallPrec). There are 64 rows of data and 9 columns as variables which are SAMPLEYR, Time, Transect, Richness, ROCK, LITTER, BARESOIL, FallPrec, SprTmax. 
+
+### Data cleaning
+
+Almost any data analysis requires data cleaning. It is the process of identifying erroneous, incorrectly formatted, duplicate or incomplete data, removing them from the dataset, merging the data, and preparing the data for modeling^[8]^. In our vegetation dataset, we remove the incomplete rows by removing the rows contained NA. There are 58 rows of data left.
+
+### Data exploration
+
+When we access the data, the first step is to visualize the data and investigate the data outliers, normality, linear and non-linear relationship between variables, ask questions such as where are the data centered, how are they spread, and whether data transformation is required^[9]^.
+
+#### Boxplot
+
+Boxplot, or box-and-whisker plot, visualizes the mean and spread of a dataset based on five-number summary: the minimum, the maximum, the sample median, and the first and third quartiles. From boxplot, we can tell whether the data is symmetrical and how tightly it is grouped. Boxplot can also be used to analyze relationship between variables. 
+In this case, we draw a boxplot of vegetation richness and boxplots of vegetation richness conditional on the nominal variables: transect and time respectively.
+
+#### Dot plot
+
+Dot plots represent each individual observation in a group data points based on a nominal variable^[10]^. It is a useful tool for identification of outliers and homogeneity. The x axis label shows the range of values, and y axis represents the identity of the data points.The package of interest is **ggplot2**.
+
+#### Scatterplot
+
+Scatterplot is a useful tool to visually explore the relationship between two variables by plotting one predictor variable along the horizontal axis and the response along the vertical axis. To help visualize the relationship, a regression line is often added to the plot.
+
+#### Pairplot
+
+Pairplot, or scatterplot matrix, shows multiple pair-wise scatterplots in one graph and can be used to analyze relationships between variables, and between variables and response. The pairplot of explanatory variables can be used to detect collinearity. The pairplot of all response and explanatory variables can be used for judging whether the relationships between response and predictors are linear. We used the **R** base function **pairs()**.
+
+#### Correlation
+
+Correlation, or dependence, refers to the degree to which a pair of variables are linearly related. Positive correlation indicates that variables increase or decrease together, while negative correlation indicates that with one variable increasing, the other decreases, and vice versa. When predictor variables are highly correlated, they cannot independently predict the response, resulting in collinearity. However, the thresholds of correlation coefficients |r|<0.7 is an indicator. If |r| <0.7, collinearity will not be a big concern in regression analysis^[11]^. We use **R** package **corrplot** to visualize the correlation and **RColorBrewer** package to manage colors.
+
+### Balanced/Imbalanced Data
+
+ In mixed effect model, if there is very high difference between the numbers of observations in groups, then we can say our dataset is imbalanced. The group with more observations is overpresented, and there is a chance that they can outweigh others and vice versa for underrepresented groups. Having a balanced data set for a model would generate higher accuracy models. We use **barplots** to plot the amount of data in the different time groups and transects.
+
+### Two-way ANOVA
+
+A two-way ANOVA is used to estimate how the mean of a quantitative variable changes according to the levels of two categorical variables. It examines the influence of two different categorical independent variables on one continuous dependent variable. The two-way ANOVA model is usually represented as:
+$$\mu _{{ij}}=\mu +\alpha _{i}+\beta _{j}+\gamma _{{ij}}$$
+However, since there is no replication within each group, we can still test the two main effects, but cannot test the interaction. We did the two-way ANOVA based on the assumption that there is no interaction. Then the model is represented as:
+$$\mu _{{ij}}=\mu +\alpha _{i}+\beta _{j}$$
+The two main effects in this case are time and transect. We used **aov** function to do the ANOVA test.
+
+### Multiple Linear Regression with Generalized Least Squares
+
+There are typically multiple variables influence vegetation richness. We can describe the relationship by an
+intercept ($\beta _{0}$) and a regression coefficients ($\beta _{1}$, $\beta _{2}$, . . . , $\beta _{m}$):
+$$y_{i} = \beta_{0} + \beta_{1}x_{1i} + \beta_{2}x_{2i} +\beta_{3}x_{3i}+\beta_{4}x_{4i}+\beta_{5}x_{5i}+\epsilon_{i}$$
+With parameters:$\beta_{0}$:Intercept, $\beta_{1}$:Rock, $\beta_{2}$:Litter, $\beta_{3}$:Baresoil, $\beta_{4}$: Fall precipitation, $\beta_{5}$: Maximum Spring Temperature.
+We installed the **R** package **nlme**(Linear and Nonlinear Mixed Effects Models) and used the function **gls()**, fitting linear model using Generalized Least Squares, the default method is restricted maximum likelihood(REML).
+
+#### Genearalized Least Squares
+
+In Ordinary Least Squares Model, we minimize the sum of squared residuals(SSR):
+ $$SSR = e^{T}e\\=(Y-X\hat{\beta})^{T}(Y-X\hat{\beta})$$
+ 
+ $$\hat{\beta}=argmin_{\hat{\beta}}SSR$$
+ $$\hat{\beta}=(X^{T}X)^{-1}X^{T}Y$$
+ However, there are a set of mathematical restrictions under which the ordinary least squared(OLS) estimator is the Best Linear Unbiased Estimator (BLUE). Genearl least squares(GLS) is more efficient than OLS under heteroscedasticity or autocorrelation.[12]
+To recover the BLUE estimator, the GLS approach is to transform the model to a new set of observations that satisfy the constant variance assumption, and then use OLS.
+ Given the covariance matrix expressed as:
+ $$Var(\epsilon)=\sigma^2V$$
+ V is a $$n\times n$$ matrix. We can define:
+ $$V=K^{T}K=KK$$
+ $$e'=K^{-1}e\\Y'=K^{-1}Y\\X'=K^{-1}X$$
+$$ SSR=e'^{T}e'\\=(Y'-X'\hat{\beta})^{T}(Y'-X'\hat{\beta})$$
+$$\hat{\beta_{GLS}}=argmin_{\hat{\beta_{GLS}}}SSR$$
+$$\hat{\beta_{GLS}}=(X^TV^{-1}X)^{-1}X^TV^{-1}Y$$
+
+
+#### Paramter Interaction
+
+In complex systems sucn as plant community, variables often interact with each other to influence outcomes.The grassland ecosystem response varies due to interaction of changes in both temperature and precipitation. Previous research found that bunchgrass productivity in National Bison Range increased with growing season precipitation, while warming weather alone has no significant effect^[13]^. We add an interaction term of fall precipitation(FallPrec) and maximum spring temperature(SprTmax):
+$$y_{i} = \beta_{0} + \beta_{1}x_{1i} + \beta_{2}x_{2i} + \beta_{3}x_{3i}+\beta_{4}x_{4i}+\beta_{5}x_{5i}+\beta_{6}x_{4i}x_{5i}+\epsilon_{i}$$
+$\beta_{6}$ is the parameter of precipitation and temperature interaction term.
+
+### Time Effect
+
+The species richness is not only affected by environmental factors, but also by time indirectly changing biotic and abotic conditions^[14]^. Time series analysis which is applied to data continuous through time, cannot be used on our dataset. We plotted the standardized residuals versus time to determine whether the linear regression model explains the temporal pattern. A LOESS smoother was added to assist visualization.
+
+### Linear Mixed Effects Model
+
+Nested data often generated in multiple field sites. From the previous boxplot and time effects analysis, the data shows a nested structure: observations belong to nests or subgroups within a population. The subgroups here are different transects.
+Linear mixed effects model is a linear model that incorporates fixed and random effects. Random effects refer to parameters that are assumed to randomly varying around a population mean. Fixed effects do not vary. The mixed effects model can be expressed as:
+$$y=X\beta+Z\mathbf{b}+\epsilon$$
+$y$ is the matrix of observation; $X$ is a matrix of ‘fixed’ predictor variables; $\beta$ is a vector of fixed effects; $Z$ is a matrix of random predictor variables; $\mathbf{b}$is a vector of random effects; $\epsilon$is the distribution of errors.
+$$\mathbf{b}_{i}\sim\mathcal{N}(0,G_{i})$$
+$$\epsilon\sim\mathcal{N}(0,\sigma_{i})$$
+Tianyu et al.2020 proposed the following options when investigating the relationship between NDVI(Normalized Difference of Vegetation Index) and meteorological variables(precipitation and temperature)^[15]^.
+1. Random intercept only
+2. Random intercept and random slope of precipitation
+3. Random intercept and random slope of temperature
+4. Random intercept and random slope of both precipitation and temperature
+Here in our case, we fit the random intercept only model, and random intercept and slope of fall precipitation model using **lme()** (Linear Mixed-Effects Models)function in **nlme** package.
+
+### Identify the fixed effects structure
+
+The goal of modeling is to determine the best possible model that captures all of important features of our data. Adding parameters may improve the performance and lead to better fit outcome, but also increase the risk of overfitting. There are a few model evaluation statistics including $AIC$, and likelihood-ratio test($LRT$).
+---
+
+| Model Name    | Fixed-effects Variables                                                               | Random-effects Variables |
+|:-------------:|:-------------------------------------------------------------------------------------:|:------------------------:|
+| lr            | Soil, Litter, Baresoil, Maximum spring temperature,Fall precipitation                 | N/A                      |
+| lr1           | Soil, Litter, Baresoil, Maximum spring temperature,Fall precipitation and interaction | N/A                      |
+| mod1          | Soil, Litter, Baresoil, Maximum spring temperature,Fall precipitation                 | N/A                      |
+| mod2          | Soil, Litter, Baresoil, Maximum spring temperature,Fall precipitation                 | Fall precipitation       |
+
+We can premarily compare the models using **anova()** function:
+
+#### Likelihood Ratio Test
+
+The likelihood-ratio test compares a pair of nested models based on the ratio of their likelihoods.
+$$\lambda_{LR}=-2(\ln[\mathcal{L}(\textrm{Reduced})-\mathcal{L}(\textrm{Full})])$$
+
+#### Akaike Information Criterion(AIC)
+
+Information criteria(IC) approach is based on Kullback-Leibler information. It is used to select the best models that minimizes the K-L information loss. Akaike Information Criterion(AIC) is a famous estimation of K-L information loss. A lower value of AIC suggests that the model explains the data better. AIC is represented by the following equation:
+$$AIC= -2\ln(\mathcal{L}) + 2\mathcal{K}$$
+$\mathcal{L}$ is the maximum likelihood estimate of parameters; $\mathcal{K}$ is the number of parameters in the model.
+A small sample size bias correction for AIC is AICc, given by:
+$$AICc=AIC+\frac{2k^2+2k}{n-k-1}$$
+
+### Model Validation
+
+We displayed a diagnostic check including residuals plot, normality, correlation, and heterogeneity check for the selected model to ensure the linear regression is trustworthy.
+We plotted the residuals versus fitted values to detect if there is any pattern of relationship and heteroscedasticity of the data. We used histogram and Q-Q plot to check the normality of residuals. Function **qqPlot()** is from the **car** package. By mean centering the variable values using **scale()** function, collinearity can be alleviated^[16]^.
+
+### Model Averaging
+
+Model averaging refers to the process of using several models at once for making predictions or
+inferring parameters. It is a useful tool to deal with model uncertainty. We will get the full benefits of model averaging when the models are of high variance. We subset and averaged the plausible models(only $\Delta AICc$ within 2). We used the **subset()** function and **confint()** to estimate parameters.
+
+### Importance of the Model
+
+We compared the selected model to a intercept only model by $\Delta AICc$. It will tell us how much of an improvement our model is over simply looking at the mean.
+
+## Result
+
+### Data Visualization
+```{r echo=FALSE}
+setwd("/Users/yiraozhang/Desktop/BIOL-paper1")
+vege<-read.csv("Vegetation.csv" )
+vege<-na.omit(vege)
+boxplot(vege$Richness, xlab="Richness", main="Boxplot of Richness")
+boxplot(vege$Richness~vege$Time, xlab="Time", ylab="Richness", main="Boxplot of Richness vs Time")
+boxplot(vege$Richness~vege$Transect, xlab="Transect", ylab="Richness", main="Boxplot of Richness vs Transect")
+```
+```{r echo=FALSE}
+library(ggplot2)
+ggplot(vege, aes(Richness, Transect)) +geom_point()+ggtitle("Dot Plot of Richness vs Transect") + theme(plot.title = element_text(hjust = 0.5))
+ggplot(vege, aes(Richness, Time)) +geom_point()+ggtitle("Dot Plot of Richness vs Time") + theme(plot.title = element_text(hjust = 0.5))
+```
+From the boxplots, the median richness is around 10, and there is no outlier. Conditional boxplots of richness versus time and transect show that vegetation richness differs by time and transect.
+```{r echo=FALSE}
+par(mfrow=c(3,2))
+plot(vege$ROCK, vege$Richness, xlab="ROCK", ylab="Richness")
+abline(lm(Richness~ROCK, data=vege), col="blue")
+plot(vege$LITTER, vege$Richness, xlab="LITTER", ylab="Richness")
+abline(lm(Richness~LITTER, data=vege), col="blue")
+plot(vege$BARESOIL, vege$Richness, xlab="BARESOIL", ylab="Richness")
+abline(lm(Richness~BARESOIL, data=vege),col="blue")
+plot(vege$FallPrec, vege$Richness, xlab="FallPrec", ylab="Richness")
+abline(lm(Richness~FallPrec,data=vege), col="blue")
+plot(vege$SprTmax, vege$Richness, xlab="SprTmax", ylab="Richness")
+abline(lm(Richness~SprTmax, data=vege), col="blue")
+```
+Scatterplots suggest that there are no obvious linear relationships between richness and each of the variables except for maximum spring temperature.
+
+```{r echo=FALSE}
+pairs(vege)
+```
+```{r echo=FALSE}
+corr<-cor(vege,use="complete.obs", method="kendall")
+library(corrplot)
+library(RColorBrewer)
+M <-cor(vege,use="complete.obs", method="kendall")
+corrplot(M, type="upper", order="hclust",col=brewer.pal(n=8, name="RdYlBu"))
+```
+From pairplots and correlation matrix, there are weak linear relationships between variables($R^2$ is less than 0.6607), suggesting the correlations between them are not significant. There is no concern of collinearity with including these variables in a model apart from adding model complexity.
+
+### Balanced Data
+```{r echo=FALSE}
+barplot(table(vege$Time), xlab="Time")
+barplot(table(vege$Transect), xlab="Transect")
+```
+From the barplots of the amount of data in the different groups for time and transects, we can see that the sampling is unbalanced, and the unbalance is presented seriously in time 6, sample year 1989, since the data includes more N/As in that year.
+
+### Two-way ANOVA
+```{r echo=FALSE}
+library(knitr)
+anova_2way<-aov(Richness~ Time + Transect, data=vege)
+ano<-summary(anova_2way)
+ano
+```
+
+Two-way analysis of variance result table suggests that transect effect statistically differs from 0. We can reject the NULL hypothesis and confirm that changing transects impact the vegetation richness. However, the p-value of Time is 0.863>>0.05, we cannot reject the NULL hypothesis, thus time does not have significant effect on vegetation richness.
+
+### Multiple Linear Regression
+
+We fit the regression model with variables of rock, litter, baresoil, fall precipitation and maximum spring temperature. 
+```{r echo=FALSE}
+library(nlme)
+library(car)
+library(knitr)
+lr<-gls(Richness~ROCK+LITTER+BARESOIL+FallPrec+SprTmax, method="REML",data=vege)
+plot(lr)
+hist(resid(lr), xlab="Residuals", ylab="Frequency")
+qqPlot(resid(lr))
+```
+The coefficients are as following:
+Intercept:20.00064911, ROCK:-0.09267586, LITTER:-0.08263297, BARESOIL:-0.13366318, FallPrec:0.01964915     SprTmax: -0.40820573. 
+There is no obvious pattern of residuals vs fitted value, and histogram and Q-Q plot suggest the residuals are normally distributed.
+Then we add the interaction term of maximum spring temperature and fall precipitation to our linear model:
+```{r echo=FALSE}
+lr1<-gls(Richness~ROCK+LITTER+BARESOIL+FallPrec*SprTmax, method="REML",data=vege)
+co<-summary(lr)$coefficients
+plot(lr1)
+hist(resid(lr1), xlab="Residuals", ylab="Frequency")
+qqPlot(resid(lr1))
+anova(lr,lr1)
+```
+The coefficients are as following:
+Intercept: 17.511876003, ROCK: -0.093770749, LITTER:-0.087366303, BARESOIL:-0.135343390, FallPrec: 0.074229945, SprTmax:-0.198637807, FallPrec:SprTmax:-0.004438857.
+The residual plot does not show patterns and the residuals are normally distributed. Comparing the AIC of the two fixed model, we found that lr model with AIC=278.7057, is better than lr1 model with AIC=288.6994. likelihood ratio test(LR=7.993671, p-value=0.0047) also confirms the conclusion.
+In order to find out whether time has effect on our linear model, we plot residuals vs time:
+```{r echo=FALSE}
+scatter.smooth(vege$SAMPLEYR, resid(lr), xlab="Time", ylab="Residuals")
+```
+A LOESS smoother with a span of 0.75 added to the diagram is almost a straight line at zero indicating that time is not important in the linear regression, which is consistent with ANOVA conclusion.
+
+### Linear Mixed Effects Model
+
+The variable assumed to have random effects is Transect. mod1 is the random intercept model, and mod2 is the random intercept and slope model.
+Random intercept model(mod1):
+```{r echo=FALSE}
+#Random Intercept
+library(nlme)
+mod1<-lme(Richness~ROCK+LITTER+BARESOIL+FallPrec+SprTmax, random= ~1|Transect,method="REML",data=vege)
+summary(mod1)
+plot(fitted(mod1), resid(mod1))
+hist(resid(mod1))
+qqPlot(resid(mod1))
+```
+Random intercept and slope model(mod2):
+```{r echo=FALSE}
+mod2<-lme(Richness~ROCK+LITTER+BARESOIL+FallPrec+SprTmax, random= ~1+FallPrec|Transect,method = "REML",data=vege)
+summary(mod2)
+plot(fitted(mod2), resid(mod2))
+hist(resid(mod2))
+qqPlot(resid(mod2))
+anova(mod1, mod2)
+```
+Residuals of both mod1 and mod2 are normally distributed, but AIC of mod1 is lower than AIC of mod2(280.7057<284.7057), suggesting mod1 is better than mod2.
+
+### Identify the fixed effects structure
+
+#### Model selection by likelihood ratio test:
+
+By checking the AIC, lr is better than mod1. Based on p-values of the parameters, LITTER might be worth dropping.
+```{r echo=FALSE}
+anova(lr,mod1)
+summary(lr)
+```
+Step1: Dropping LITTER
+```{r echo=FALSE}
+refit1<-update(lr,.~.-LITTER)
+summary(refit1)
+anova(refit1, lr)
+```
+We compared the two model(lr and refit1) via ANOVA, and the AIC result suggests that refit1 is better than lr, since AIC of refit1 is 276.0499, and AIC of lr is 278.7057, but the likelihood ratio of refit1 vs lr is 0.6558114, with p-value=0.418<0.05, indicating there is no significant difference. Looking at p-values of parameters in refit1, the next term might be worth dropping is FallPrec.
+Step2: Dropping FallPrec
+```{r echo=FALSE}
+refit2<-update(refit1,.~.-FallPrec)
+summary(refit2)
+anova(refit1,refit2)
+```
+The AIC result suggests refit2 model(AIC=276.0499) is better than refit1(273.3391), but the likelihood ratio test indicates we cannot reject the NULL hypothesis and the two models do not differ significantly.
+#### Model selection by AICc:
+```{r echo=FALSE}
+library(MuMIn)
+dredge(lr)
+```
+AICc based model selection performed by **dredge()** function favors the fixed linear model with explanatory variales of BARESOIL, ROCK, SprTmax.
+Then we performed a final round of diagnostic checks to ensure there are no remaining issues by plotting the residuals and calculating the correlations.
+```{r echo=FALSE}
+plot(fitted(refit2), resid(refit2))
+hist(resid(refit2), breaks= 10, xlab="Residuals", ylab="Frequency")
+qqPlot(resid(refit2))
+#correlation
+summary(refit2)
+```
+The correlation between intercept and SprTmax is high. The solution is mean centering the variables:
+```{r echo=FALSE}
+#solution: mean centering reference
+ST<-scale(vege$SprTmax)
+RC<-scale(vege$ROCK)
+BS<-scale(vege$BARESOIL)
+refit3<-gls(Richness~RC+BS+ST,method = "ML",data=vege)
+summary(refit3)
+```
+### Model Average
+<!-- We selected the model the $\Delta$AICc of 2 of the top model. -->
+```{r echo=FALSE}
+#Subset all models within $\Delta$AICc of 2 of the top model
+subset<-subset(dredge(lr),subset = delta<2)
+subset
+#estimate parameters
+confint(refit3, level=0.95)
+```
+There is only the top model left. 95% confidence interval of estimate parameters is:
+Intercept: (9.414, 10.517), Rock: (-1.533, -0.420), Baresoil: (-1.773, -0.550), SprTmax:(-1.835, -0.614)
+
+### Importance of the Model
+
+We refitted the data with an intercept only model(refit4). The anova table of the selected models(refit2, lr) and refitting model(refit4) is shown below:
+```{r echo=FALSE}
+refit4<-gls(Richness~1,method="REML",data=vege)
+anova(refit2,refit4)
+anova(lr, refit4)
+```
+The AIC decreased by 24 and 18.635, and likelihood ratio is 30(p-value<0.0001) and 28.63 respectively. Our models significantly improves the prediction comparing to the mean.
+
+## Discussion
+
+Vegetation richness is a measurement of biodiversity in a plant community. Environmental changes such as climate variation, baresoil changes, soil texture and rock composition over time all relate to vegetation richness. The transects are located in different study areas: Yellowstone National Park and National Bison Range. The YNP transects are located within lower teriary igneous and metamorphic rocks and transects in NBR are within fine-grained quartzitr, argillite, banded slate, and inter-bedded sandstone. The soil texture, rock and litter differ from each transect, resulting in different water retention and surface temperature. 
+
+In our study, we investigated effects of five variables: rock, litter, baresoil, maximum spring temperature, and fall precipitation. We fitted a multiple linear regression model to the data using the above variables.The coefficients suggest that vegetation richness is negatively related to litter(-0.0826), rock(-0.0927), baresoil(-0.1337) and maximum spring temperature(-0.4082), but it is positively related to fall precipitation(0.0196). Although time should play an important role in community changes, it has little effect on the linear model since on the residuals vs time plot, a LOESS smoother added was almost a straight line at zero, indicating time is not a concern in the regression model.
+
+From previous studies, temperature and precipitation interact with each other and have effect on the productivity and biodiversity of an ecosystem. We added an interaction term of fall precipitation and maximum spring temperature to our model. The AIC of model with interaction is 288.6994, which is higher than AIC of model without interaction(278.7057). The likelihood ratio is 7.9937, p-value is 0.0047, which indicates that the extra interaction parameter did not result in an improvement to the model, but added extra complexity.
+
+Linear mixed effects model is a statistical model containing both fixed effects and random effects. The assumption behind the model is that the effect of the variable occurring in nests varies randomly. Usually the mixed model explains the variation of errors better than models only with fixed effects. We refitted the model with a random intercept around data from the same transect, and with a random intercept and slope. However, comparing the three models, AIC of the fixed model is the lowest. 
+
+In the fixed effects selection process, we first looked at the p-values of the parameters in the full fixed effects model. The parameter of litter has the highest p-value(0.0523) might be worth dropping. The reduced model without litter has AIC value of 276.0499, lower than AIC of the full model(278.7057). However, the likelihood ratio is 0.6558, with p-value of 0.418, suggesting no significant difference between two models. Then by checking the p-values of the refitted model, the fall precipitation term with highest p-value(0.0077) might be worth dropping. The reduced model without litter and precipitation has AIC value of 273.3391, which is lower then the previous reduced model, but the likelihood ratio p-value is 0.3992 suggesting no significant difference. Likelihood ratio tests both indicate the terms do not need to be removed. The **dredge()** function shows that the clear winner is a fixed linear model with explanatory variables of BARESOIL, ROCK, SprTmax. 
+
+In the model validation process, we plotted the residuals and there is no obvious pattern between fitted values vs residuals. The residuals are normally distributed from the histograms and Q-Q plot. However, the correlation between intercept and SprTmax is high. We solved this problem by mean centering the variables. 
+
+We selected and averaged the models, by subsetting all models within $\Delta$AICc of 2 of the top model.There is only the top model(refit2)left. Then we refitted the data with an intercept only model(refit4). By including the factors of baresoil, rock, maximum spring temperature, the AIC decreased by 24, and likelihood ratio is 30(p-value<0.0001). By including the all the factors, the AIC decreased by 18.635, and likelihood ratio is 28.63(p-value<0.0001). Our model significantly improves the prediction comparing to the mean.
+
+Two different model selection approaches: Likelihood ratio test and AIC provide two different models: 
+1. a fixed model of full factors: baresoil, maximum spring temperature, fall precipitation, rock and litter
+2. a fixed model with reduced factors: baresoil, maximum spring temperature, rock.
+They both improve the model prediction compared to the mean. However, fall precipitation is vital to recharging soil moisture for plant growth to begin in spring; The amount of litter affect moisture retention, surface temperature, and nutrients available. Although AIC method favors the reduced model, we recommend the full model with all the variables in a biological context: biodiversity measured by vegetation richness, is negatively related to litter, rock, baresoil and maximum spring temperature, and positively related to fall precipitation. Highest coefficient of maximum spring temperature(-0.4082) indicates greater relevance of vegetation richness. Lower coefficients of fall precipitation and litter, indicate less relevance and might be dropped, which is consistent with AIC model selection result.
+
+## Reference
+
+[1] Roberts, F. S. (2019). Measurement of biodiversity: Richness and evenness. In Mathematics of Planet Earth (pp. 203-224). Springer, Cham.<br>
+[2] Woodward, A., Smith, K. R., Campbell-Lendrum, D., Chadee, D. D., Honda, Y., Liu, Q., ... & Haines, A. (2014). Climate change and health: on the latest IPCC report. The Lancet, 383(9924), 1185-1189.<br>
+[3] Gillman, L. N., & Wright, S. D. (2014). Species richness and evolutionary speed: the influence of temperature, water and area. Journal of Biogeography, 41(1), 39-51.<br>
+[4] Li, L., Zheng, Z., Biederman, J. A., Xu, C., Xu, Z., Che, R., ... & Hao, Y. (2019). Ecological responses to heavy rainfall depend on seasonal timing and multi‐year recurrence. New Phytologist, 223(2), 647-660.<br>
+[5] Socher, S. A., Prati, D., Boch, S., Müller, J., Klaus, V. H., Hölzel, N., & Fischer, M. (2012). Direct and productivity‐mediated indirect effects of fertilization, mowing and grazing on grassland species richness. Journal of Ecology, 100(6), 1391-1399.<br>
+[6][7][14] Sikkink, P. G., Zuur, A. F., Ieno, E. N., & Smith, G. M. (2007). Monitoring for change: using generalised least squares, non-metric multidimensional scaling, and the Mantel test on western Montana grasslands. In Analysing ecological data (pp. 463-484). Springer, New York, NY<br>
+[8] Buttrey, S., & Whitaker, L. R. (2017). A Data Scientist's Guide to Acquiring, Cleaning and Managing Data in R. Wiley.<br>
+[9] Zuur, A., Ieno, E. N., & Smith, G. M. (2007). Analyzing ecological data. Springer.<br>
+[10] Wilkinson, L. (1999). Dot plots. The American Statistician, 53(3), 276-281.<br>
+[11] Adler, P. B., & Levine, J. M. (2007). Contrasting relationships between precipitation and species richness in space and time. Oikos, 116(2), 221-232.<br>
+[12] Aitkin, A. C. (1935). On least squares and linear combination of observations. Proceedings of the Royal Society of Edinburgh, 55, 42-48.<br>
+[13] Volenec, Z. M., & Belovsky, G. E. (2018). The interaction of temperature and precipitation determines productivity and diversity in a bunchgrass prairie ecosystem. Oecologia, 188(3), 913-920.<br>
+[15] Li, T., Meng, Q., & Du, Q. (2020). Application of Random Effects to Explore the Gulf of Mexico Coastal Forest Dynamics in Relation to Meteorological Factors. IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 13, 5526-5535.<br>
+[16] Iacobucci, D., Schneider, M. J., Popovich, D. L., & Bakamitsos, G. A. (2016). Mean centering helps alleviate “micro” but not “macro” multicollinearity. Behavior research methods, 48(4), 1308-1317.
